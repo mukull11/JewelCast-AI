@@ -26,6 +26,13 @@
 
 - Forecasting models, backtesting, inventory optimization, SHAP and the dashboard
   are **not implemented yet**. No accuracy or savings claims are made.
+- EDA findings are descriptive. Price, discount, festival and promotion
+  associations are correlations, not causal elasticities, and may be confounded by
+  category mix, seasonality, lifecycle and availability.
+- UCI non-product audit codes are excluded from product EDA by default. Including
+  them changes SKU counts and price/revenue concentration.
+- M5 event analysis depends on the sparse `event_name` calendar field; event names
+  are not forward-filled.
 - The planned direct multi-horizon models may not capture complex cross-SKU
   substitution or cannibalisation.
 - Cold-start forecasting will rely on category/attribute similarity; it cannot

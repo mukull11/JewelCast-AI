@@ -5,10 +5,10 @@ builds SKU-level daily demand datasets from three explicitly separated sources,
 prepares them for multi-horizon forecasting, and will convert forecasts into
 inventory recommendations through an interactive Streamlit dashboard.
 
-> **Status: Milestone M0–M1 complete.** Data ingestion, validation, synthetic data
-> generation, quality reporting and the test suite are implemented. Forecasting,
-> inventory optimization, explainability and the dashboard are planned for later
-> milestones and are clearly labelled below.
+> **Status: Milestone M0–M2 complete.** Data ingestion, validation, synthetic data
+> generation, quality reporting, exploratory data analysis and the test suite are
+> implemented. Forecasting, inventory optimization, explainability and the
+> dashboard are planned for later milestones and are clearly labelled below.
 
 ---
 
@@ -58,7 +58,7 @@ expected, which SKUs risk stockout or overstock, and when to reorder.
 
 ## Key Features
 
-### Implemented (M0–M1)
+### Implemented (M0–M2)
 
 - **Three data modes** with explicit provenance: synthetic jewellery, UCI Online
   Retail II, and a memory-bounded M5 subset.
@@ -81,13 +81,20 @@ expected, which SKUs risk stockout or overstock, and when to reorder.
 - **Dataset metadata** with SHA-256 hashes, sizes, row counts, sheet names,
   schemas and provenance.
 - **Automated pytest suite** for all three modes, provenance, null inventory,
-  date filling and duplicate handling.
+  date filling, duplicate handling and EDA calculations.
+- **Per-mode EDA pipeline** with demand trends, SKU ABC analysis, Syntetos-Boylan
+  intermittent-demand classes, concentration (Gini/HHI), category and seasonality
+  profiles, calendar-event uplifts, pricing/promotion associations, and synthetic
+  inventory metrics.
+- **EDA artefacts** per mode: `summary.json`, `EDA_REPORT.md`, CSV tables and
+  Matplotlib PNG plus Plotly HTML charts under `reports/eda/<mode>/`.
+- **UCI non-product audit rows** (postage, manual, bad debt, fees) are excluded
+  from product EDA by default and remain available for audit.
 
 ### Planned / In Development
 
 | Feature | Status |
 |---|---|
-| Exploratory data analysis modules | Planned (M2) |
 | Time-series feature engineering | Planned (M3) |
 | Baseline, SARIMA, LightGBM, XGBoost models | Planned (M4) |
 | Optional LSTM/GRU extension | Planned (M4) |
@@ -178,21 +185,71 @@ flowchart TD
 > sales, pricing or inventory records. Synthetic records are always labelled
 > `data_source = "synthetic"`.
 
+## Exploratory Data Analysis (M2)
+
+The EDA pipeline analyses each mode independently and writes a Markdown report,
+JSON summary, CSV tables and PNG/HTML charts. It does not create lag, rolling or
+future-target features, so it adds no leakage to later forecasting work. Formulas
+are documented in [`docs/eda_methodology.md`](docs/eda_methodology.md).
+
+```powershell
+# Rebuild processed data, then run all EDA modes
+python scripts/build_datasets.py --all
+python scripts/run_eda.py --all
+
+# One mode, or a bounded run
+python scripts/run_eda.py --modes synthetic
+python scripts/run_eda.py --modes uci --sku-limit 200
+python scripts/run_eda.py --modes m5 --no-html
+```
+
+Outputs are written to `reports/eda/<mode>/` (git-ignored, reproducible locally):
+
+- `EDA_REPORT.md` — human-readable findings;
+- `summary.json` — machine-readable metrics;
+- `tables/*.csv` — demand, ABC, intermittent demand, category, calendar,
+  pricing, promotion and inventory tables;
+- `charts/*.png` and `*.html` — static and interactive charts.
+
+### Illustrative findings from the current local build
+
+- **Synthetic jewellery:** 300 SKUs, 175,165 SKU-days, 40.6% zero-sales SKU-days.
+  ABC A/B/C = 145/84/71 SKUs, with A contributing 80.0% of revenue. Festival days
+  show +25.0% average daily units and wedding-season days +22.3%; Diwali is the
+  strongest festival at +45.9%. Promoted SKU-days show +31.6% paired uplift. Mean
+  days of inventory cover is 8.9 days, and 296 of 300 SKUs have at least one
+  stockout day in the simulation.
+- **UCI Online Retail II:** after excluding 13 non-product audit codes (5,638
+  rows), 4,903 product SKUs and 2,286,949 SKU-days remain. 76.8% of SKU-days are
+  zero-sales/imputed open days. ABC A/B/C = 1,041/1,283/2,579 SKUs, with A at
+  80.0% of revenue; 82.3% of SKUs are lumpy. Units Gini is 0.755. The 16 UK bank
+  holidays have no recorded sales, and weekends are 74.4% below weekdays. No
+  inventory records exist, so inventory metrics are not computed.
+- **M5 Walmart benchmark:** 90 SKUs, 65,700 SKU-days and 57 actual event days (not
+  forward-filled). Event days show -2.2% average daily units overall, while
+  Thanksgiving has the highest event-day average. ABC A/B/C = 28/24/38 SKUs, with
+  A at 80.2% of revenue; 57.8% of SKUs are smooth. No inventory records exist.
+
+These are descriptive findings for the selected public/synthetic datasets. They
+are not claims about Voylla or any real jewellery retailer, and correlation is not
+causation.
+
 ## Technology Stack
 
-Actually used in M0–M1:
+Actually used in M0–M2:
 
 - **Python 3.11**
 - **Pandas, NumPy** — data processing
 - **PyArrow** — Parquet storage
 - **OpenPyXL** — Excel ingestion
 - **PyYAML** — configuration
+- **Matplotlib** — static EDA charts
+- **Plotly** — interactive EDA charts
 - **Pytest** — automated tests
 
 Installed and reserved for later milestones (already in `requirements.txt`):
-Plotly, Matplotlib, Seaborn, Statsmodels, Scikit-learn, LightGBM, XGBoost, SHAP,
-Streamlit. Prophet and PyTorch are **optional** and not required for the core
-pipeline.
+Seaborn, Statsmodels, Scikit-learn, LightGBM, XGBoost, SHAP, Streamlit. Prophet
+and PyTorch are **optional** and not required for the core pipeline.
 
 ## Forecasting Methodology (In Development)
 
@@ -286,6 +343,12 @@ python scripts/validate_data.py --strict
 # Rebuild dataset metadata (hashes, schemas, row counts)
 python scripts/build_metadata.py
 
+# Run EDA for all modes (writes reports/eda/)
+python scripts/run_eda.py --all
+
+# Run EDA for one mode
+python scripts/run_eda.py --modes synthetic
+
 # Run the test suite
 python -m pytest tests -q
 
@@ -293,12 +356,14 @@ python -m pytest tests -q
 streamlit run app.py
 ```
 
-Outputs are written to `data/processed/<mode>/` and documented in
-[`data/README.md`](data/README.md).
+Data outputs are written to `data/processed/<mode>/` and documented in
+[`data/README.md`](data/README.md). EDA outputs are written to
+`reports/eda/<mode>/` and summarised in the M2 section above.
 
-**Planned commands (not yet available):** model training, forecast generation,
-evaluation reports and the Streamlit dashboard will be added in later milestones.
-They are intentionally not documented as working commands yet.
+**Planned commands (not yet available):** feature engineering, model training,
+forecast generation, evaluation reports and the full Streamlit dashboard will be
+added in later milestones. They are intentionally not documented as working
+commands yet.
 
 ## Project Structure
 
@@ -320,6 +385,7 @@ JewelCast-AI/
 ├── src/
 │   ├── data/                   # synthetic, UCI, M5, metadata, schema, festivals
 │   ├── preprocessing/          # cleaning, date completion, quality, pipeline
+│   ├── eda/                    # metrics, loading, charts, reports, pipeline
 │   ├── features/               # planned M3
 │   ├── models/                 # planned M4
 │   ├── forecasting/            # planned M4
@@ -334,11 +400,12 @@ JewelCast-AI/
 │   ├── generate_synthetic.py
 │   ├── build_datasets.py
 │   ├── validate_data.py
-│   └── build_metadata.py
+│   ├── build_metadata.py
+│   └── run_eda.py
 ├── tests/
-├── docs/                       # architecture, provenance, limitations, evaluation
+├── docs/                       # architecture, provenance, limitations, evaluation, EDA methodology
 ├── models/                     # git-ignored
-├── reports/                    # git-ignored
+├── reports/                    # EDA and future reports; git-ignored
 ├── logs/                       # git-ignored
 └── notebooks/                  # planned
 ```
@@ -383,6 +450,9 @@ inventory policies are evaluated on real or explicitly labelled synthetic data.
   observed behaviour.
 - **M5 is subsetted** for memory reasons; results do not represent the full
   competition dataset.
+- **EDA findings are descriptive associations, not causal effects.** Price,
+  discount, festival and promotion relationships can be confounded by category
+  mix, seasonality and product lifecycle.
 - **Forecasting, inventory optimization and dashboard are not implemented yet.**
 - Date completion creates zero-sales observations for open days; it does not
   invent demand. Outliers are flagged, never deleted.

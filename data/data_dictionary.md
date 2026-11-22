@@ -16,11 +16,11 @@ optional fields remain null when the source does not provide them.
 | `discount_percentage` | float64 | Yes | Discount applied. Null when unknown (UCI/M5). |
 | `revenue` | float64 | No | `units_sold × selling_price` (rounded). |
 | `festival_flag` | int8 | No | 1 on a configured festival/event day. UCI uses UK bank holidays; M5 uses 0. |
-| `festival_name` | string | Yes | Name of the strongest active festival/holiday. |
+| `festival_name` | string | Yes | Name of the active festival/holiday on that date. Sparse: null on non-festival/non-holiday days. Not forward-filled. |
 | `promotion_flag` | int8 | No | 1 when a promotion is known to be active. |
 | `available_stock` | float64 | Yes | Stock available at the start of the day. **Null means unknown, not zero.** |
 | `stockout_flag` | Int8 | Yes | 1 when observed demand exceeded available stock (synthetic only). |
-| `event_name` | string | Yes | M5 US calendar event name; null for other modes. |
+| `event_name` | string | Yes | M5 US calendar event name; null on non-event days and for other modes. Sparse: not forward-filled. |
 | `date_imputed` | int8 | No | 1 when the row was created to complete a missing calendar day. |
 | `data_source` | string | No | `synthetic`, `uci` or `m5`. Never mixed within a mode. |
 
@@ -29,6 +29,13 @@ optional fields remain null when the source does not provide them.
 - **Synthetic:** inventory is simulated and populated.
 - **UCI / M5:** no inventory records exist, so `available_stock` is entirely null.
   It must not be interpreted as zero stock, and lost demand cannot be estimated.
+
+### Calendar-field semantics
+
+`festival_name` and `event_name` describe only the specific date where the event
+occurs. Date completion forward-fills product attributes and prices, but it does
+**not** forward-fill calendar event names. This keeps M5 event-day analysis
+limited to actual event dates.
 
 ## SKU master (`sku_master.parquet`)
 

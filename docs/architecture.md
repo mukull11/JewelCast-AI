@@ -7,7 +7,7 @@ engineering, forecasting, evaluation, inventory optimization, explainability and
 presentation. Each layer is independently testable and the dashboard will read
 only persisted artefacts.
 
-## Implemented layers (M0–M1)
+## Implemented layers (M0–M2)
 
 ```mermaid
 flowchart LR
@@ -15,7 +15,10 @@ flowchart LR
     B --> C[src/preprocessing]
     C --> D[Parquet + quality reports]
     D --> E[Dataset metadata]
-    D --> F[Tests]
+    D --> F[src/eda]
+    F --> G[EDA tables, charts, summary JSON and Markdown reports]
+    D --> H[Tests]
+    F --> H
 ```
 
 ### `src/data`
@@ -37,6 +40,16 @@ flowchart LR
 | `quality.py` | Missingness, duplicates, zero-sales, intermittent demand, outliers. |
 | `pipeline.py` | Per-mode orchestration and artefact writing. |
 
+### `src/eda`
+
+| Module | Responsibility |
+|---|---|
+| `loading.py` | Read processed SKU-day Parquet files, apply optional SKU subsets and exclude UCI non-product audit codes by default. |
+| `metrics.py` | Pure descriptive metrics: overview, coverage, trends, SKU statistics, ABC, intermittent demand, concentration, category/seasonality, calendar events, pricing, promotions and synthetic inventory. |
+| `plotting.py` | Matplotlib PNG and Plotly HTML charts for trends, categories, ABC, demand classes, pricing, promotions, events and inventory. |
+| `report.py` | Compute the full EDA context, export CSV tables, `summary.json` and a human-readable `EDA_REPORT.md`. |
+| `pipeline.py` | Per-mode orchestration and result object. |
+
 ### `src/utils`
 
 | Module | Responsibility |
@@ -57,6 +70,9 @@ flowchart LR
    forward-fills prices/attributes, and preserves null inventory.
 5. Quality reports and dataset summaries are written next to the Parquet files.
 6. `dataset_metadata.json` records hashes, row counts, schemas and provenance.
+7. `scripts/run_eda.py` reads one mode at a time and writes EDA tables, charts,
+   `summary.json`, `EDA_REPORT.md` and a top-level manifest under `reports/eda/`.
+   Modes are never combined and no forecasting features are created.
 
 ## Unified schema
 
@@ -76,11 +92,10 @@ inventory records; synthetic inventory is simulated.
 - Processed outputs are Parquet; metadata stores SHA-256 hashes.
 - Tests use fixed seeds and temporary directories.
 
-## Planned layers (M2–M7)
+## Planned layers (M3–M7)
 
 | Layer | Planned modules |
 |---|---|
-| EDA | `src/eda/` charts and summary reports. |
 | Features | `src/features/` leakage-safe lags, rolling windows, calendar/commercial features, chronological splits. |
 | Models | `src/models/` baselines, SARIMA, LightGBM, XGBoost, optional LSTM/GRU, persistence. |
 | Forecasting | `src/forecasting/` direct multi-horizon prediction, cold start, quantiles. |
@@ -96,4 +111,7 @@ inventory records; synthetic inventory is simulated.
   validation, duplicate aggregation and null-inventory semantics.
 - Fixture-based tests for UCI (small Excel workbook) and M5 (small CSV set).
 - Reproducibility test for the synthetic generator.
+- Unit tests for EDA overview, ABC boundaries, intermittent-demand thresholds,
+  missing-data coverage, concentration, category, pricing, promotion, calendar
+  and inventory calculations.
 - Integration tests for built artefacts and metadata hashes.

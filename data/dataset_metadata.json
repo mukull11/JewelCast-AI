@@ -1,7 +1,7 @@
 {
   "project": "JewelCast AI",
   "version": "0.1.0",
-  "generated_at": "2026-11-22T10:47:13.710294+00:00",
+  "generated_at": "2026-11-22T11:54:26.163566+00:00",
   "source_archives": {
     "online+retail+ii.zip": {
       "size_bytes": 45622418,
@@ -4137,8 +4137,8 @@
               "type": "int8"
             }
           ],
-          "size_bytes": 191112,
-          "sha256": "a410a8fa03148b7746454ea81320344d2315ebb995fcb54562887af29d7558d3"
+          "size_bytes": 191794,
+          "sha256": "e1df89aa5d4f9d6d2102d459d4ae318e17fba33f2a912e1a41c5ce417f2f1c7c"
         },
         "sku_master.parquet": {
           "type": "parquet",
@@ -4336,8 +4336,8 @@
               "type": "int8"
             }
           ],
-          "size_bytes": 686583,
-          "sha256": "80d8d73f963ada0e65bbd72b2e4b9febf19ec71eab69997e1bd67e68814344cb"
+          "size_bytes": 689122,
+          "sha256": "f599a837d6e11f0b98d3361cdffa427d83a2749e67d7cb5148f901835a95973d"
         },
         "inventory_snapshots.parquet": {
           "type": "parquet",

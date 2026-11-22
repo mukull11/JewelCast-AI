@@ -47,7 +47,9 @@ def fill_missing_dates(frame: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
 
     Missing observations are recorded with ``date_imputed=1``. Prices and static
     attributes are forward-filled within SKU; inventory is forward-filled only when
-    it was observed (it remains null for datasets without inventory).
+    it was observed (it remains null for datasets without inventory). Calendar
+    labels (``festival_name`` and ``event_name``) are intentionally not
+    forward-filled because they describe only the date on which the event occurs.
     """
     working = frame.copy()
     working["date"] = pd.to_datetime(working["date"]).dt.normalize()
@@ -68,7 +70,7 @@ def fill_missing_dates(frame: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     merged = merged.drop(columns=["_merge"])
 
     merged = merged.sort_values(["sku", "date"]).reset_index(drop=True)
-    for column in ("product_name", "category", "selling_price", "available_stock", "festival_name", "event_name"):
+    for column in ("product_name", "category", "selling_price", "available_stock"):
         if column in merged.columns:
             merged[column] = merged.groupby("sku", observed=True)[column].ffill()
 

@@ -47,6 +47,24 @@ def test_fill_missing_dates_and_forward_fill_price():
     assert pd.isna(gap["available_stock"])
 
 
+def test_event_and_festival_names_are_not_forward_filled():
+    frame = pd.DataFrame(
+        [
+            _row("2024-01-01", "A", units=1, price=10.0, source="m5"),
+            _row("2024-01-03", "A", units=1, price=10.0, source="m5"),
+        ]
+    )
+    frame["event_name"] = ["EventA", None]
+    frame["festival_name"] = ["FestivalA", None]
+    filled, _ = fill_missing_dates(frame)
+    gap = filled.loc[(filled["sku"] == "A") & (filled["date"] == pd.Timestamp("2024-01-02"))].iloc[0]
+    assert pd.isna(gap["event_name"])
+    assert pd.isna(gap["festival_name"])
+    second = filled.loc[(filled["sku"] == "A") & (filled["date"] == pd.Timestamp("2024-01-03"))].iloc[0]
+    assert pd.isna(second["event_name"])
+    assert pd.isna(second["festival_name"])
+
+
 def test_duplicate_sku_date_is_aggregated_not_deleted():
     frame = pd.DataFrame(
         [

@@ -78,6 +78,24 @@ Synthetic inventory: 25,103 weekly snapshots and 10,952 purchase orders.
 UCI jewellery subset: **357 SKUs** (validated above the 20-SKU minimum).
 M5 subset: 30 items × 3 stores, one store per state, 730 days.
 
+## Run EDA on the processed data
+
+```powershell
+# All modes; writes reports/eda/<mode>/
+python scripts/run_eda.py --all
+
+# One mode
+python scripts/run_eda.py --modes synthetic
+python scripts/run_eda.py --modes uci --sku-limit 200
+python scripts/run_eda.py --modes m5 --no-html
+```
+
+EDA outputs are `EDA_REPORT.md`, `summary.json`, `tables/*.csv` and
+`charts/*.png|html` under `reports/eda/`. For UCI, 13 explicit non-product audit
+codes (postage, manual, bad debt, fees) are excluded by default; use
+`--include-non-products` to retain them. The processed dataset itself keeps those
+rows for audit.
+
 ## Important limitations
 
 - **Synthetic data is simulated.** It is reproducible from `synthetic_config.json`
