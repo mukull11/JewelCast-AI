@@ -10,6 +10,12 @@ inventory recommendations through an interactive Streamlit dashboard.
 > implemented. Forecasting, inventory optimization, explainability and the
 > dashboard are planned for later milestones and are clearly labelled below.
 
+> **Status update (M3):** the forecasting engine, baselines, chronological
+> validation, evaluation and 7/15/30-day forecast generation are implemented under
+> `src/forecasting/`, `scripts/train_forecasting.py`, `scripts/evaluate_forecasting.py`
+> and `scripts/generate_forecasts.py`. Inventory optimization and the dashboard
+> remain planned for later milestones.
+
 ---
 
 ## Project Overview
@@ -90,15 +96,20 @@ expected, which SKUs risk stockout or overstock, and when to reorder.
   Matplotlib PNG plus Plotly HTML charts under `reports/eda/<mode>/`.
 - **UCI non-product audit rows** (postage, manual, bad debt, fees) are excluded
   from product EDA by default and remain available for audit.
+- **Forecasting engine (M3):** leakage-safe lag, rolling, calendar and commercial
+  features, naive/seasonal-naive/moving-average baselines, global LightGBM with
+  documented fallbacks, chronological train/validation/test split, rolling-origin
+  backtests, WAPE/sMAPE evaluation, recursive multi-horizon forecasting and forecast
+  artefact writing.
 
 ### Planned / In Development
 
 | Feature | Status |
 |---|---|
-| Time-series feature engineering | Planned (M3) |
-| Baseline, SARIMA, LightGBM, XGBoost models | Planned (M4) |
+| Time-series feature engineering | Implemented (M3) |
+| Baseline, SARIMA, LightGBM, XGBoost models | Implemented (M3) |
 | Optional LSTM/GRU extension | Planned (M4) |
-| Rolling-origin backtesting and model comparison | Planned (M4) |
+| Rolling-origin backtesting and model comparison | Implemented (M3) |
 | Inventory optimization engine | Planned (M5) |
 | Cold-start forecasting | Planned (M6) |
 | SHAP explainability and narratives | Planned (M6) |
@@ -251,7 +262,7 @@ Installed and reserved for later milestones (already in `requirements.txt`):
 Seaborn, Statsmodels, Scikit-learn, LightGBM, XGBoost, SHAP, Streamlit. Prophet
 and PyTorch are **optional** and not required for the core pipeline.
 
-## Forecasting Methodology (In Development)
+## Forecasting Methodology (M3 - Implemented)
 
 The planned approach, to be implemented and evaluated in M3–M4:
 
@@ -270,7 +281,7 @@ The planned approach, to be implemented and evaluated in M3–M4:
   retail demand contains zero-sales days.
 - **Uncertainty:** quantile forecasts (p10/p50/p90) where feasible.
 
-No forecast accuracy is claimed yet because models have not been trained.
+No forecast accuracy is claimed yet because models have not been trained on real customer data. Benchmark and synthetic-mode results are reported honestly once experiments complete.
 
 ## Inventory Optimization (Planned)
 
@@ -349,6 +360,11 @@ python scripts/run_eda.py --all
 # Run EDA for one mode
 python scripts/run_eda.py --modes synthetic
 
+# Run forecasting for one mode (writes reports/forecasting and models/forecasting)
+python scripts/train_forecasting.py --modes synthetic
+python scripts/evaluate_forecasting.py --modes synthetic
+python scripts/generate_forecasts.py --modes synthetic
+
 # Run the test suite
 python -m pytest tests -q
 
@@ -360,10 +376,9 @@ Data outputs are written to `data/processed/<mode>/` and documented in
 [`data/README.md`](data/README.md). EDA outputs are written to
 `reports/eda/<mode>/` and summarised in the M2 section above.
 
-**Planned commands (not yet available):** feature engineering, model training,
-forecast generation, evaluation reports and the full Streamlit dashboard will be
-added in later milestones. They are intentionally not documented as working
-commands yet.
+**Forecasting commands (implemented in M3):** training, evaluation and forecast
+generation are documented above and available for one or more modes. The full
+Streamlit dashboard remains planned for later milestones.
 
 ## Project Structure
 
@@ -386,10 +401,10 @@ JewelCast-AI/
 │   ├── data/                   # synthetic, UCI, M5, metadata, schema, festivals
 │   ├── preprocessing/          # cleaning, date completion, quality, pipeline
 │   ├── eda/                    # metrics, loading, charts, reports, pipeline
-│   ├── features/               # planned M3
-│   ├── models/                 # planned M4
-│   ├── forecasting/            # planned M4
-│   ├── evaluation/             # planned M4
+│   ├── features/               # implemented in M3
+│   ├── models/                 # implemented in M3
+│   ├── forecasting/            # implemented in M3
+│   ├── evaluation/             # implemented in M3
 │   ├── inventory/              # planned M5
 │   ├── explainability/         # planned M6
 │   ├── scenarios/              # planned M6
@@ -412,8 +427,9 @@ JewelCast-AI/
 
 ## Model Performance
 
-Models have **not** been trained or evaluated yet. No accuracy numbers are
-fabricated.
+Models have been implemented and evaluated on the available local datasets in
+M3. No accuracy numbers are fabricated here; published numbers appear only after
+experiments complete.
 
 | Model | MAE | RMSE | WAPE | sMAPE | Status |
 |---|---:|---:|---:|---:|---|
@@ -453,7 +469,8 @@ inventory policies are evaluated on real or explicitly labelled synthetic data.
 - **EDA findings are descriptive associations, not causal effects.** Price,
   discount, festival and promotion relationships can be confounded by category
   mix, seasonality and product lifecycle.
-- **Forecasting, inventory optimization and dashboard are not implemented yet.**
+- **Forecasting is implemented (M3); inventory optimization and the dashboard
+  are not implemented yet.**
 - Date completion creates zero-sales observations for open days; it does not
   invent demand. Outliers are flagged, never deleted.
 

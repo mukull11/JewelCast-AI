@@ -50,6 +50,19 @@ flowchart LR
 | `report.py` | Compute the full EDA context, export CSV tables, `summary.json` and a human-readable `EDA_REPORT.md`. |
 | `pipeline.py` | Per-mode orchestration and result object. |
 
+### `src/forecasting` (implemented in M3)
+
+| Module | Responsibility |
+|---|---|
+| `data_builder.py` | Leakage-safe daily panels per mode, mode-specific event calendars, calendar gap completion. |
+| `feature_engineering.py` | Lag, rolling, calendar, product and price/promotion features; feature selection. |
+| `baselines.py` | Naive, seasonal naive and moving-average baselines with fallbacks. |
+| `models.py` | Global LightGBM/XGBoost/HistGradientBoosting model wrapper, target transform, persistence. |
+| `validation.py` | Chronological splits and rolling-origin backtest origins. |
+| `evaluation.py` | MAE, RMSE, WAPE, sMAPE, aggregation and model comparison. |
+| `forecasting.py` | Recursive multi-horizon forecasting and pipeline orchestration. |
+| `reporting.py` | Forecast artefact writing and Markdown reports. |
+
 ### `src/utils`
 
 | Module | Responsibility |

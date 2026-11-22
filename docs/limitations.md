@@ -25,7 +25,8 @@
 ## Methodological limitations (current status)
 
 - Forecasting models, backtesting, inventory optimization, SHAP and the dashboard
-  are **not implemented yet**. No accuracy or savings claims are made.
+  are implemented in M3 for forecasting only; inventory optimization, SHAP and the
+  dashboard remain planned. No accuracy or savings claims are made.
 - EDA findings are descriptive. Price, discount, festival and promotion
   associations are correlations, not causal elasticities, and may be confounded by
   category mix, seasonality, lifecycle and availability.
@@ -33,9 +34,10 @@
   them changes SKU counts and price/revenue concentration.
 - M5 event analysis depends on the sparse `event_name` calendar field; event names
   are not forward-filled.
-- The planned direct multi-horizon models may not capture complex cross-SKU
-  substitution or cannibalisation.
-- Cold-start forecasting will rely on category/attribute similarity; it cannot
+- The multi-horizon model uses recursive forecasting, which may accumulate error
+  over longer horizons. Future prices, promotions and business decisions are held
+  at observed values or set to zero where unknown.
+- Cold-start forecasting relies on category/attribute similarity; it cannot
   recover true new-product demand without early sales.
 - Scenario simulation will produce model-based estimates, not causal effects.
 - Deep learning (LSTM/GRU) and Prophet are optional and may be skipped on

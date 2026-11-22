@@ -158,9 +158,45 @@ inventory:
 
 forecasting:
   horizons: [7, 15, 30]
+  max_horizon: 30
   validation_days: 30
   test_days: 30
   min_history_days: 60
+  min_history_for_model: 14
+  # Chronological split fractions. A 70/15/15 split is used when enough
+  # history exists; short series/datasets fall back to the configured
+  # validation_days/test_days windows.
+  split:
+    train_fraction: 0.70
+    validation_fraction: 0.15
+    test_fraction: 0.15
+  # Rolling-origin backtests on the validation period and the held-out test
+  # period. UCI is large, so the defaults keep training bounded.
+  backtest_origins: 2
+  test_origins: 1
+  target_transform: log1p
+  clip_predictions_at_zero: true
+  use_shap: false
+  model:
+    prefer: lightgbm
+    fallback_order: [lightgbm, xgboost, sklearn_hist]
+    n_estimators: 250
+    learning_rate: 0.05
+    num_leaves: 31
+    min_child_samples: 20
+    subsample: 0.9
+    colsample_bytree: 0.9
+    reg_lambda: 1.0
+    random_state: 42
+  # Mode-specific runtime guards. These bound the number of training rows
+  # without mixing datasets or changing the chronological split.
+  runtime:
+    synthetic:
+      max_training_rows: 400000
+    uci:
+      max_training_rows: 1200000
+    m5:
+      max_training_rows: 200000
 
 logging:
   level: INFO

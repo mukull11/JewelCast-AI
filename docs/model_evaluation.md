@@ -2,51 +2,25 @@
 
 ## Status
 
-**Not evaluated yet.** No forecasting model has been trained or scored. This file
-will be updated with actual results after milestone M4. No numbers are fabricated.
+**Implemented in M3.** The forecasting engine, baselines, chronological splits,
+rolling-origin backtests, evaluation metrics and recursive multi-horizon forecasts
+are implemented under `src/forecasting/` with CLI entry points
+`scripts/train_forecasting.py`, `scripts/evaluate_forecasting.py` and
+`scripts/generate_forecasts.py`.
 
-## Planned evaluation protocol
+Actual numbers are produced by running the training, evaluation and forecast
+scripts. No numbers are fabricated. Results are written to
+`reports/forecasting/<mode>/`.
+
+## Implemented evaluation protocol
 
 - **Splits:** chronological train/validation/test only. No random shuffling.
 - **Backtesting:** rolling-origin evaluation across multiple forecast origins.
 - **Horizons:** 7, 15 and 30 days.
 - **Levels:** individual SKU, category and overall business.
-- **Metrics:**
-  - MAE — mean absolute error.
-  - RMSE — root mean squared error.
-  - WAPE — weighted absolute percentage error, robust to zero-sales days.
-  - sMAPE — symmetric mean absolute percentage error.
-  - MAPE is not the primary metric because retail demand contains zeros.
+- **Metrics:** MAE, RMSE, WAPE and sMAPE. WAPE is primary because retail demand
+  contains zero-sales days; sMAPE guards against zero denominators. MAPE is not
+  used as the primary metric.
 - **Model selection:** validation/backtest performance, never training accuracy.
-- **Uncertainty:** quantile forecasts (p10/p50/p90) where feasible; point
-  forecasts and intervals will be reported separately.
-
-## Planned comparison
-
-| Model | Type | Status |
-|---|---|---|
-| Naive | Baseline | Not Evaluated |
-| Seasonal Naive (lag 7) | Baseline | Not Evaluated |
-| Moving Average | Baseline | Not Evaluated |
-| SARIMA | Statistical | Not Evaluated |
-| LightGBM | Global ML, direct horizons | Not Evaluated |
-| XGBoost | Global ML, direct horizons | Not Evaluated |
-| LSTM / GRU | Optional deep learning | Not Evaluated |
-
-## Reporting requirements
-
-When results are produced, the report must include:
-
-- the exact dataset mode, date range and SKU subset;
-- the split dates and backtest origins;
-- per-horizon and per-level metrics;
-- actual-vs-predicted charts and residual distributions;
-- model artefact paths and training metadata;
-- explicit disclosure when a model failed, was skipped or used a fallback.
-
-## Limitations
-
-- Metrics on synthetic data measure recovery of the simulator, not real market
-  accuracy.
-- UCI and M5 results are benchmark experiments, not jewellery business results.
-- No financial impact will be claimed without measured evidence.
+- **Uncertainty:** quantile forecasts (p10/p50/p90) remain planned for a later
+  milestone.
