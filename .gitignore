@@ -1,0 +1,81 @@
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+.python-version
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+credentials.json
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+
+# Logs and temporary files
+logs/
+*.log
+tmp/
+temp/
+.cache/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test and coverage output
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Dataset archives (preserved locally, never committed)
+*.zip
+
+# Raw and processed datasets (regenerated locally)
+data/raw/*
+data/processed/*
+data/external/*
+data/synthetic/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+!data/synthetic/.gitkeep
+
+# Generated model files
+models/*
+!models/.gitkeep
+
+# Generated reports (curated reports can be added explicitly)
+reports/*
+!reports/.gitkeep
+
+# Streamlit secrets
+.streamlit/secrets.toml

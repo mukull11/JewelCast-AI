@@ -1,0 +1,166 @@
+project:
+  name: JewelCast AI
+  version: 0.1.0
+  seed: 42
+
+paths:
+  data_raw: data/raw
+  data_processed: data/processed
+  data_synthetic: data/synthetic
+  data_external: data/external
+  models: models
+  reports: reports
+  logs: logs
+
+data:
+  # Active mode for the application: synthetic | uci | m5
+  mode: synthetic
+
+  uci:
+    excel_filename: online_retail_II.xlsx
+    sheets:
+      - "Year 2009-2010"
+      - "Year 2010-2011"
+    currency: GBP
+    country_note: "United Kingdom retail transactions. Not Indian retail data."
+    non_product_codes:
+      - POST
+      - DOT
+      - M
+      - D
+      - C2
+      - BANK CHARGES
+      - AMAZONFEE
+      - PADS
+      - CRUK
+      - B
+      - S
+      - GIFT
+      - TEST001
+      - TEST002
+      - TEST003
+    jewellery_rules:
+      Earrings:
+        - earring
+        - ear rings
+        - stud earrings
+      Necklaces:
+        - necklace
+        - necklet
+        - choker
+      Rings:
+        - ring
+      Bracelets:
+        - bracelet
+      Bangles:
+        - bangle
+      Anklets:
+        - anklet
+      Pendants:
+        - pendant
+      Jewellery Sets:
+        - jewellery set
+        - jewelry set
+        - necklace and earring
+        - earring and necklace
+      Other Jewellery:
+        - brooch
+        - charm
+        - cufflink
+        - tiara
+        - jewellery
+        - jewelry
+    jewellery_exclusions:
+      - key ring
+      - keyring
+      - napkin ring
+      - curtain ring
+      - ring binder
+      - ring holder
+      - spring
+      - earring card
+      - earring stand
+      - jewellery box
+      - jewelry box
+      - jewellery stand
+      - jewelry stand
+      - jewellery roll
+      - jewelry roll
+      - jewellery bag
+      - jewelry bag
+      - jewellery case
+      - jewelry case
+
+  m5:
+    sales_file: sales_train_validation.csv
+    calendar_file: calendar.csv
+    prices_file: sell_prices.csv
+    subset:
+      n_items: 30
+      n_stores: 3
+      max_days: 730
+      stratify_by_category: true
+      stratify_by_state: true
+    note: "Walmart M5 benchmark. Not jewellery data and not Voylla data."
+
+  synthetic:
+    n_skus: 300
+    start_date: "2023-01-01"
+    end_date: "2024-12-31"
+    seed: 42
+    cold_start_fraction: 0.12
+    initial_stock_days_min: 18
+    initial_stock_days_max: 55
+    lead_time_days_min: 7
+    lead_time_days_max: 30
+    promotion_probability: 0.06
+    max_discount_percentage: 40
+    target_service_level: 0.95
+
+festivals:
+  indian:
+    - {name: "Makar Sankranti", date: "2023-01-14", type: "festival", strength: 1.15, window_days: 2}
+    - {name: "Valentine's Day", date: "2023-02-14", type: "gifting", strength: 1.45, window_days: 4}
+    - {name: "Holi", date: "2023-03-08", type: "festival", strength: 1.10, window_days: 2}
+    - {name: "Akshaya Tritiya", date: "2023-04-22", type: "auspicious", strength: 1.40, window_days: 3}
+    - {name: "Raksha Bandhan", date: "2023-08-31", type: "gifting", strength: 1.50, window_days: 4}
+    - {name: "Janmashtami", date: "2023-09-07", type: "festival", strength: 1.10, window_days: 2}
+    - {name: "Ganesh Chaturthi", date: "2023-09-19", type: "festival", strength: 1.15, window_days: 3}
+    - {name: "Navratri", date: "2023-10-15", type: "festival", strength: 1.20, window_days: 5}
+    - {name: "Durga Puja", date: "2023-10-20", type: "festival", strength: 1.20, window_days: 4}
+    - {name: "Karva Chauth", date: "2023-11-01", type: "gifting", strength: 1.30, window_days: 3}
+    - {name: "Dhanteras", date: "2023-11-10", type: "auspicious", strength: 1.85, window_days: 4}
+    - {name: "Diwali", date: "2023-11-12", type: "festival", strength: 2.10, window_days: 5}
+    - {name: "Bhai Dooj", date: "2023-11-15", type: "gifting", strength: 1.25, window_days: 2}
+    - {name: "Christmas", date: "2023-12-25", type: "gifting", strength: 1.30, window_days: 4}
+    - {name: "Makar Sankranti", date: "2024-01-15", type: "festival", strength: 1.15, window_days: 2}
+    - {name: "Valentine's Day", date: "2024-02-14", type: "gifting", strength: 1.45, window_days: 4}
+    - {name: "Holi", date: "2024-03-25", type: "festival", strength: 1.10, window_days: 2}
+    - {name: "Akshaya Tritiya", date: "2024-05-10", type: "auspicious", strength: 1.40, window_days: 3}
+    - {name: "Raksha Bandhan", date: "2024-08-19", type: "gifting", strength: 1.50, window_days: 4}
+    - {name: "Janmashtami", date: "2024-08-26", type: "festival", strength: 1.10, window_days: 2}
+    - {name: "Ganesh Chaturthi", date: "2024-09-07", type: "festival", strength: 1.15, window_days: 3}
+    - {name: "Navratri", date: "2024-10-03", type: "festival", strength: 1.20, window_days: 5}
+    - {name: "Durga Puja", date: "2024-10-09", type: "festival", strength: 1.20, window_days: 4}
+    - {name: "Karva Chauth", date: "2024-10-20", type: "gifting", strength: 1.30, window_days: 3}
+    - {name: "Dhanteras", date: "2024-10-29", type: "auspicious", strength: 1.85, window_days: 4}
+    - {name: "Diwali", date: "2024-10-31", type: "festival", strength: 2.10, window_days: 5}
+    - {name: "Bhai Dooj", date: "2024-11-03", type: "gifting", strength: 1.25, window_days: 2}
+    - {name: "Christmas", date: "2024-12-25", type: "gifting", strength: 1.30, window_days: 4}
+  wedding_seasons:
+    - {name: "Wedding Season 2023", start: "2023-11-20", end: "2023-12-15", strength: 1.25}
+    - {name: "Wedding Season 2024", start: "2024-11-15", end: "2024-12-15", strength: 1.25}
+
+inventory:
+  service_level: 0.95
+  default_lead_time_days: 14
+  review_period_days: 7
+
+forecasting:
+  horizons: [7, 15, 30]
+  validation_days: 30
+  test_days: 30
+  min_history_days: 60
+
+logging:
+  level: INFO
