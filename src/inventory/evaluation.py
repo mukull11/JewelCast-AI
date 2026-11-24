@@ -7,11 +7,16 @@ Definitions (also documented in ``docs/inventory_optimization.md``)
 - **Fill rate:** fulfilled units divided by demand proxy units.
 - **Stockout frequency:** stockout SKU-days divided by all simulated SKU-days.
 - **Lost sales:** unfulfilled demand proxy units. This is not latent demand.
-- **Average inventory:** mean start-of-day on-hand stock across SKU-days.
-- **Inventory turnover:** demand proxy units divided by average inventory over
-  the simulation window; an annualised value is also reported.
-- **Days of inventory:** average inventory divided by average demand per
-  SKU-day, using the same window.
+- **Average inventory:** mean start-of-day on-hand stock across SKU-days
+  (units per SKU-day).
+- **Average portfolio inventory:** average total on-hand units across all SKUs
+  per day, i.e. the SKU-day average multiplied by the number of SKUs.
+- **Inventory turnover (units-based):** total demand-proxy units divided by the
+  average portfolio inventory units over the window. This is the *period*
+  turnover. It is **not** a financial (COGS/value) turnover because no validated
+  product-cost data exists. An annualised value multiplies by 365/period_days.
+- **Days of inventory:** period days divided by the period turnover, so it is
+  exactly consistent with the annualised turnover.
 - **Excess inventory:** average units above target stock across review
   decisions, based on the forecast-driven target at that decision.
 - **Holding cost:** not calculated because no unit holding-cost input exists.
@@ -41,6 +46,7 @@ OVERALL_METRICS = (
     "stockout_sku_days",
     "skus_with_stockout",
     "average_inventory_units",
+    "average_portfolio_inventory_units",
     "average_closing_inventory_units",
     "ending_inventory_units",
     "inventory_turnover",
@@ -94,13 +100,15 @@ def simulation_metrics(
     stockout_sku_days = int(daily["stockout_flag"].sum())
     sku_days = int(len(daily))
     period_days = int(daily["date"].nunique())
+    n_skus = int(daily["sku"].nunique())
     average_inventory = float(daily["opening_on_hand"].mean())
+    average_portfolio_inventory = average_inventory * n_skus
     ending = (
         daily.sort_values(["sku", "date"]).groupby("sku", observed=True).tail(1)["closing_on_hand"].sum()
     )
-    avg_daily_demand_per_sku_day = _safe_div(overall_demand, sku_days)
-    turnover = _safe_div(overall_demand, average_inventory)
+    turnover = _safe_div(overall_demand, average_portfolio_inventory)
     annualized = turnover * 365.0 / period_days if period_days > 0 and np.isfinite(turnover) else float("nan")
+    days_of_inventory = _safe_div(float(period_days), turnover) if np.isfinite(turnover) else float("nan")
 
     if decisions is None or decisions.empty:
         excess_avg = float("nan")
@@ -132,11 +140,12 @@ def simulation_metrics(
         "stockout_sku_days": stockout_sku_days,
         "skus_with_stockout": int(daily.loc[daily["stockout_flag"] == 1, "sku"].nunique()),
         "average_inventory_units": average_inventory,
+        "average_portfolio_inventory_units": average_portfolio_inventory,
         "average_closing_inventory_units": float(daily["closing_on_hand"].mean()),
         "ending_inventory_units": float(ending.sum()),
         "inventory_turnover": turnover,
         "annualized_inventory_turnover": annualized,
-        "days_of_inventory": _safe_div(average_inventory, avg_daily_demand_per_sku_day),
+        "days_of_inventory": days_of_inventory,
         "excess_inventory_units": excess_avg,
         "overstocked_decision_share": overstock_share,
         "replenishment_count": int(len(orders)) if orders is not None else 0,

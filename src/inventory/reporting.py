@@ -45,12 +45,14 @@ SIMULATION_HEADERS = {
     "sku_days": "SKU-days",
     "demand_proxy_units": "Demand proxy units",
     "fulfilled_units": "Fulfilled units",
-    "lost_sales_units": "Lost sales units",
+    "lost_sales_units": "Lost sales proxy units",
     "fill_rate": "Fill rate",
     "service_level_sku_day": "Service level (SKU-day)",
     "stockout_frequency": "Stockout frequency",
-    "average_inventory_units": "Avg inventory",
-    "inventory_turnover": "Turnover",
+    "average_inventory_units": "Avg inventory (units/SKU-day)",
+    "average_portfolio_inventory_units": "Avg portfolio inventory (units/day)",
+    "inventory_turnover": "Turnover (units, period)",
+    "annualized_inventory_turnover": "Annualised turnover (units)",
     "days_of_inventory": "Days of inventory",
     "excess_inventory_units": "Excess units (avg/decision)",
     "replenishment_count": "Orders",
@@ -515,6 +517,8 @@ def write_simulation_outputs(
     lines.append("- Orders arrive after the SKU's supplier lead time; daily observed demand is then served from stock.")
     lines.append("- Every policy starts from the same on-hand stock and (by default) an empty pipeline, and faces the same demand proxy and lead times.")
     lines.append("- Lost sales are unfulfilled demand-proxy units. They are **not** reconstructed latent demand.")
+    lines.append("- Inventory turnover is units-based: total demand-proxy units divided by average total on-hand inventory units across all SKUs in the window, annualised by 365/period days. It is not a financial or COGS turnover because no validated cost input exists.")
+    lines.append("- Days of inventory = period days / period turnover, so it is exactly consistent with the annualised turnover.")
     lines.append("")
     lines.append("## Policy comparison")
     lines.append("")
@@ -533,6 +537,7 @@ def write_simulation_outputs(
                 "stockout_frequency",
                 "average_inventory_units",
                 "inventory_turnover",
+                "annualized_inventory_turnover",
                 "days_of_inventory",
                 "excess_inventory_units",
                 "replenishment_count",
@@ -629,11 +634,14 @@ def write_evaluation_outputs(
                 "stockout_frequency",
                 "average_inventory_units",
                 "inventory_turnover",
+                "annualized_inventory_turnover",
                 "days_of_inventory",
                 "replenishment_count",
             ],
             SIMULATION_HEADERS,
         ),
+        "",
+        "Turnover is units-based (no validated cost/COGS input), annualised by 365/period days; days of inventory = period days / period turnover.",
         "",
         "Holding cost: not calculated (no validated cost input).",
         "",

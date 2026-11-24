@@ -290,12 +290,66 @@ def test_evaluation_metrics_have_known_values() -> None:
     assert overall["service_level_sku_day"] == 0.75
     assert overall["stockout_frequency"] == 0.25
     assert overall["average_inventory_units"] == 7.0
-    assert abs(overall["inventory_turnover"] - 5.0 / 7.0) < 1e-12
+    # Units-based turnover uses total demand / average TOTAL (portfolio) inventory,
+    # i.e. the per-SKU-day mean multiplied by the two SKUs in this fixture.
+    assert overall["average_portfolio_inventory_units"] == 14.0
+    assert abs(overall["inventory_turnover"] - 5.0 / 14.0) < 1e-12
+    assert abs(overall["annualized_inventory_turnover"] - (5.0 / 14.0) * 365.0 / 2.0) < 1e-12
     assert abs(overall["days_of_inventory"] - 5.6) < 1e-12
     assert overall["replenishment_count"] == 1
     assert overall["replenishment_units"] == 6
     assert overall["holding_cost"] is None
     assert set(per_sku["sku"]) == {"A", "B"}
+
+
+def test_inventory_turnover_is_portfolio_consistent() -> None:
+    """Regression for the M4.1 audit: turnover must not divide portfolio demand
+    by a per-SKU average inventory (which inflated it by the SKU count)."""
+    from src.inventory.evaluation import simulation_metrics
+
+    dates = pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"])
+    skus = ["A", "B", "C"]
+    rows = []
+    for sku_index, sku in enumerate(skus):
+        opening = 10.0 + sku_index
+        daily_demand = 2.0 + sku_index
+        for date in dates:
+            fulfilled = min(daily_demand, opening)
+            rows.append(
+                {
+                    "policy": "p",
+                    "dataset": "synthetic",
+                    "date": date,
+                    "sku": sku,
+                    "category": "Earrings",
+                    "opening_on_hand": opening,
+                    "received_units": 0.0,
+                    "demand_proxy_units": daily_demand,
+                    "fulfilled_units": fulfilled,
+                    "lost_units": daily_demand - fulfilled,
+                    "closing_on_hand": opening - fulfilled,
+                    "incoming_open_units": 0.0,
+                    "inventory_position_after_sales": opening - fulfilled,
+                    "stockout_flag": int(fulfilled < daily_demand),
+                }
+            )
+    daily = pd.DataFrame(rows)
+    overall, _ = simulation_metrics(daily, pd.DataFrame(), pd.DataFrame())
+
+    total_demand = float(daily["demand_proxy_units"].sum())
+    avg_per_sku_day = float(daily["opening_on_hand"].mean())
+    n_skus = daily["sku"].nunique()
+    period_days = daily["date"].nunique()
+
+    expected_turnover = total_demand / (avg_per_sku_day * n_skus)
+    assert abs(overall["average_portfolio_inventory_units"] - avg_per_sku_day * n_skus) < 1e-12
+    assert abs(overall["inventory_turnover"] - expected_turnover) < 1e-12
+    assert abs(
+        overall["annualized_inventory_turnover"] - expected_turnover * 365.0 / period_days
+    ) < 1e-12
+    assert abs(overall["days_of_inventory"] - period_days / expected_turnover) < 1e-12
+    # The old buggy value would have been total_demand / avg_per_sku_day.
+    assert overall["inventory_turnover"] < total_demand / avg_per_sku_day
 
 
 def test_artifact_forecast_provider_filters_to_origin_and_horizon(tmp_path) -> None:

@@ -71,8 +71,15 @@ def main() -> int:
             "fill_rate": "fulfilled units / demand proxy units",
             "service_level_sku_day": "share of SKU-days with no unfulfilled demand proxy",
             "stockout_frequency": "stockout SKU-days / all SKU-days",
-            "inventory_turnover": "demand proxy units / average on-hand inventory in the window",
-            "days_of_inventory": "average inventory / average daily demand per SKU-day",
+            "lost_sales_units": "unfulfilled demand-proxy units (proxy, not latent demand)",
+            "inventory_turnover": (
+                "units-based: total demand-proxy units / average total on-hand inventory "
+                "units across all SKUs over the window (not a financial/COGS turnover)"
+            ),
+            "annualized_inventory_turnover": "period turnover * 365 / period days",
+            "days_of_inventory": (
+                "period days / period turnover (exactly consistent with annualised turnover)"
+            ),
         },
     }
     paths = write_evaluation_outputs(comparison, per_sku_all, output_dir, metadata=metadata)

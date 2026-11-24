@@ -313,8 +313,8 @@ report.
 
 The generator stores **stockout-censored observed sales**, not latent customer
 demand. The simulation uses observed `units_sold` as a common **demand proxy** and
-reports unfulfilled units as "lost sales" of that proxy. It does **not** claim to
-reconstruct true lost demand. Because every policy sees the same proxy, relative
+reports unfulfilled units as **"lost sales proxy units"** for that proxy. It does
+**not** claim to reconstruct true lost demand. Because every policy sees the same proxy, relative
 policy comparisons remain internally consistent, while absolute fill rates may be
 optimistic. The generator does not persist latent demand; if it did, it must be kept
 separate from model inputs.
@@ -340,11 +340,17 @@ Implemented in `src/inventory/evaluation.py`:
 | **Service level (SKU-day cycle service)** | Share of simulated SKU-days where all demand-proxy units were fulfilled. |
 | **Fill rate** | Fulfilled units / demand-proxy units. |
 | **Stockout frequency** | Stockout SKU-days / all simulated SKU-days. |
-| **Lost sales** | Unfulfilled demand-proxy units (not latent demand). |
+| **Lost sales proxy** | Unfulfilled demand-proxy units (not latent demand). |
 | **Average inventory** | Mean start-of-day on-hand units per SKU-day. |
-| **Inventory turnover** | Demand-proxy units / average on-hand inventory in the window. |
+| **Average portfolio inventory** | Mean total on-hand units across all SKUs per day (= SKU-day average × SKU count). |
+| **Inventory turnover (units-based)** | Total demand-proxy units / average portfolio inventory units over the window. This is a *period* turnover, **not** a financial/COGS turnover, because no validated product-cost data exists. |
 | **Annualised turnover** | Turnover × 365 / simulation period days. |
-| **Days of inventory** | Average inventory / average demand per SKU-day. |
+| **Days of inventory** | Simulation period days / period turnover, exactly consistent with the annualised turnover. |
+
+Turnover is reported in **units**, not money. Both numerator and denominator use
+the same simulation window, so the result is comparable across policies. Because
+per-SKU turnover distributions are skewed, the overall figure is the aggregate
+ratio of totals (not the unweighted mean of per-SKU ratios).
 | **Excess inventory** | Average units above the forecast-driven target stock across review decisions. |
 | **Replenishment count / units** | Number and units of simulated orders. |
 | **Holding cost** | **Not calculated** — no validated holding-cost input exists. |
