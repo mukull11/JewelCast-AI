@@ -97,3 +97,13 @@ The actual workbook uses `Invoice`, `StockCode`, `Description`, `Quantity`,
 `festivals.indian` in `config.yaml` defines date, type, strength and window for
 each Indian festival. `festivals.wedding_seasons` defines wedding-season periods.
 These are **documented assumptions for synthetic data**, not observed events.
+
+## Inventory optimization (M4)
+
+The M4 inventory engine uses the synthetic daily stock, weekly snapshots and
+purchase orders above. `available_stock` from `daily_sales.parquet` is start-of-day
+stock; pending purchase orders are aligned by `order_date`, `expected_arrival_date`
+and `status` and de-duplicated by `po_id`. The snapshot `committed_qty` was derived
+from future demand by the generator and is excluded from decisions by default.
+UCI and M5 have no inventory or purchase-order records and are rejected by the
+inventory engine; they remain forecasting-only.

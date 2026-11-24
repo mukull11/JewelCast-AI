@@ -24,9 +24,32 @@
 
 ## Methodological limitations (current status)
 
-- Forecasting models, backtesting, inventory optimization, SHAP and the dashboard
-  are implemented in M3 for forecasting only; inventory optimization, SHAP and the
-  dashboard remain planned. No accuracy or savings claims are made.
+- Forecasting models, backtesting and multi-horizon forecasts are implemented in
+  M3. Inventory optimization, historical inventory simulation, policy comparison
+  and inventory scenarios are implemented in M4 for the synthetic dataset only.
+  SHAP and the dashboard remain planned. No accuracy, savings or real-world
+  service-level claims are made.
+- Inventory optimization requires real or explicitly simulated inventory and
+  purchase-order records. UCI and M5 have neither, so the inventory engine rejects
+  those modes rather than fabricating stock.
+- Synthetic inventory records are generated with an `(s, S)`-style policy and
+  deterministic supplier lead times. They are not observed supplier, warehouse or
+  purchasing behaviour.
+- Synthetic observed sales are stockout-censored. The simulation uses them as a
+  common demand proxy; it does not reconstruct latent demand, so absolute fill
+  rates may be optimistic and true lost sales are unknown.
+- The generator does not persist latent demand. Historical replenishment behaviour
+  cannot be reconstructed fairly, so M4 compares a forecast-driven policy with a
+  simple reorder-point policy instead of claiming a historical baseline.
+- The committed quantity in weekly snapshots was derived from the following seven
+  days of demand. It is excluded from decisions by default to avoid look-ahead.
+- Safety stock uses a documented demand-volatility approximation with category
+  fallbacks. A configured service level is a planning target, not proof that the
+  service level is achieved.
+- No purchase cost, holding cost, supplier MOQ, pack size or warehouse capacity
+  exists in the synthetic dataset. These inputs are not invented; only units and
+  cover days are reported.
+- Inventory scenario results are model-based illustrations, not causal estimates.
 - EDA findings are descriptive. Price, discount, festival and promotion
   associations are correlations, not causal elasticities, and may be confounded by
   category mix, seasonality, lifecycle and availability.
@@ -39,7 +62,7 @@
   at observed values or set to zero where unknown.
 - Cold-start forecasting relies on category/attribute similarity; it cannot
   recover true new-product demand without early sales.
-- Scenario simulation will produce model-based estimates, not causal effects.
+- Scenario simulation produces model-based estimates, not causal effects.
 - Deep learning (LSTM/GRU) and Prophet are optional and may be skipped on
   CPU-only machines.
 

@@ -5,16 +5,18 @@ builds SKU-level daily demand datasets from three explicitly separated sources,
 prepares them for multi-horizon forecasting, and will convert forecasts into
 inventory recommendations through an interactive Streamlit dashboard.
 
-> **Status: Milestone M0–M2 complete.** Data ingestion, validation, synthetic data
-> generation, quality reporting, exploratory data analysis and the test suite are
-> implemented. Forecasting, inventory optimization, explainability and the
-> dashboard are planned for later milestones and are clearly labelled below.
+> **Status: Milestones M0–M4 complete.** Data ingestion, validation, synthetic
+> data generation, quality reporting, exploratory data analysis, the forecasting
+> engine, the inventory optimization engine (synthetic only) and the test suite are
+> implemented. Explainability and the full dashboard remain planned for later
+> milestones and are clearly labelled below.
 
-> **Status update (M3):** the forecasting engine, baselines, chronological
-> validation, evaluation and 7/15/30-day forecast generation are implemented under
-> `src/forecasting/`, `scripts/train_forecasting.py`, `scripts/evaluate_forecasting.py`
-> and `scripts/generate_forecasts.py`. Inventory optimization and the dashboard
-> remain planned for later milestones.
+> **Status update (M4):** the inventory optimization engine, causal historical
+> simulation, policy comparison, scenario analysis and inventory reporting are
+> implemented for the **synthetic dataset only** under `src/inventory/`,
+> `scripts/run_inventory_optimization.py`, `scripts/simulate_inventory.py` and
+> `scripts/evaluate_inventory.py`. UCI and M5 have no inventory records, so they
+> remain forecasting-only. Explainability and the full dashboard remain planned.
 
 ---
 
@@ -101,6 +103,18 @@ expected, which SKUs risk stockout or overstock, and when to reorder.
   documented fallbacks, chronological train/validation/test split, rolling-origin
   backtests, WAPE/sMAPE evaluation, recursive multi-horizon forecasting and forecast
   artefact writing.
+- **Inventory optimization engine (M4, synthetic only):** inventory-position
+  calculation aligned with purchase orders, forecast-driven lead-time demand,
+  configurable safety stock with category fallbacks, reorder points, target stock,
+  MOQ/multiple/capacity constraints, stockout and overstock risk detection, and
+  per-SKU business explanations.
+- **Causal inventory simulation and policy comparison (M4):** historical simulation
+  with forecast origins strictly before each decision date, controlled
+  forecast-driven versus simple reorder-point policies, fill rate, SKU-day service
+  level, stockout frequency, lost-sales proxy, turnover and days of inventory.
+- **Inventory scenario analysis and reports (M4):** demand ±10%/±20%, longer lead
+  time and higher service-level scenarios; Parquet/CSV/JSON/Markdown outputs under
+  `reports/inventory/`.
 
 ### Planned / In Development
 
@@ -108,13 +122,14 @@ expected, which SKUs risk stockout or overstock, and when to reorder.
 |---|---|
 | Time-series feature engineering | Implemented (M3) |
 | Baseline, SARIMA, LightGBM, XGBoost models | Implemented (M3) |
-| Optional LSTM/GRU extension | Planned (M4) |
+| Optional LSTM/GRU extension | Planned |
 | Rolling-origin backtesting and model comparison | Implemented (M3) |
-| Inventory optimization engine | Planned (M5) |
-| Cold-start forecasting | Planned (M6) |
-| SHAP explainability and narratives | Planned (M6) |
-| What-if scenario simulator | Planned (M6) |
-| Streamlit dashboard (6 pages) | Planned (M7) |
+| Inventory optimization engine | Implemented (M4, synthetic only) |
+| Historical inventory simulation and policy comparison | Implemented (M4, synthetic only) |
+| Cold-start forecasting | Planned (M5) |
+| SHAP explainability and narratives | Planned (M5) |
+| What-if scenario simulator | Implemented for inventory (M4); full app planned |
+| Streamlit dashboard (6 pages) | Planned (M6) |
 
 ## System Architecture
 
@@ -283,19 +298,38 @@ The planned approach, to be implemented and evaluated in M3–M4:
 
 No forecast accuracy is claimed yet because models have not been trained on real customer data. Benchmark and synthetic-mode results are reported honestly once experiments complete.
 
-## Inventory Optimization (Planned)
+## Inventory Optimization (M4 — Implemented, synthetic only)
 
-The M5 inventory engine will use:
+The inventory engine converts M3 forecasts into SKU-level planning decisions:
 
-- **Reorder Point** = expected lead-time demand + safety stock
-- **Safety Stock** = z(service level) × standard deviation of lead-time demand
-- **Inventory Position** = available stock + confirmed incoming − outstanding
-  commitments
-- **Recommended Order Quantity** = max(0, target stock − inventory position)
+- **Inventory Position** = start-of-day available stock + pending incoming purchase
+  orders − committed stock (committed stock excluded by default because the
+  synthetic snapshots derived it from future demand).
+- **Lead-Time Demand** = sum of the daily forecast over the SKU's supplier lead
+  time, not a flat average; short horizons are flagged.
+- **Safety Stock** = z(target service level) × σ(lead-time demand), with a
+  category-level fallback for short history.
+- **Reorder Point** = expected lead-time demand + safety stock.
+- **Target Stock** = expected protection-period demand + safety stock, where the
+  protection period is lead time plus review period.
+- **Recommended Order Quantity** = max(0, target stock − inventory position),
+  optionally constrained by MOQ, order multiple and storage capacity.
 
-Outputs will include stockout risk, overstock risk, days of inventory remaining
-and reorder recommendations. UCI/M5 have no inventory records, so the inventory
-engine will use the synthetic mode or explicitly configured inventory inputs.
+Outputs include stockout risk (low/medium/high/critical), projected stockout dates,
+days of cover, overstock and excess units, reorder lists and a plain-language
+explanation per recommendation. No purchase cost or holding cost is invented.
+
+A causal historical simulation compares a **forecast-driven** policy against a
+**simple reorder-point** policy from the same opening stock, demand series and lead
+times. Forecast origins are always one day before each decision date. Evaluation
+reports fill rate, SKU-day service level, stockout frequency, lost-sales proxy,
+average inventory, turnover and days of inventory. Scenario analysis tests demand
+±10/20%, longer lead times and 97%/99% service levels.
+
+See [`docs/inventory_optimization.md`](docs/inventory_optimization.md) for formulas,
+methodology, assumptions and limitations. **Inventory optimization is supported only
+for the synthetic dataset.** UCI and M5 have no inventory or purchase-order records
+and are never assigned synthetic inventory.
 
 ## Installation and Setup (Windows)
 
@@ -365,6 +399,11 @@ python scripts/train_forecasting.py --modes synthetic
 python scripts/evaluate_forecasting.py --modes synthetic
 python scripts/generate_forecasts.py --modes synthetic
 
+# Run inventory optimization (synthetic only; writes reports/inventory/)
+python scripts/run_inventory_optimization.py --mode synthetic
+python scripts/simulate_inventory.py --mode synthetic
+python scripts/evaluate_inventory.py
+
 # Run the test suite
 python -m pytest tests -q
 
@@ -384,7 +423,7 @@ Streamlit dashboard remains planned for later milestones.
 
 ```
 JewelCast-AI/
-├── app.py                      # Streamlit status shell (full dashboard planned M7)
+├── app.py                      # Streamlit status shell (full dashboard planned)
 ├── config.yaml                 # paths, modes, synthetic/festival/inventory settings
 ├── requirements.txt
 ├── README.md
@@ -405,22 +444,28 @@ JewelCast-AI/
 │   ├── models/                 # implemented in M3
 │   ├── forecasting/            # implemented in M3
 │   ├── evaluation/             # implemented in M3
-│   ├── inventory/              # planned M5
-│   ├── explainability/         # planned M6
-│   ├── scenarios/              # planned M6
+│   ├── inventory/              # implemented in M4 (synthetic only)
+│   ├── explainability/         # planned
+│   ├── scenarios/              # inventory scenarios implemented in M4; app planned
 │   └── utils/                  # config, logging, paths, I/O
-├── dashboard/                  # planned M7
+├── dashboard/                  # planned
 ├── scripts/
 │   ├── download_data.py
 │   ├── generate_synthetic.py
 │   ├── build_datasets.py
 │   ├── validate_data.py
 │   ├── build_metadata.py
-│   └── run_eda.py
+│   ├── run_eda.py
+│   ├── train_forecasting.py
+│   ├── evaluate_forecasting.py
+│   ├── generate_forecasts.py
+│   ├── run_inventory_optimization.py
+│   ├── simulate_inventory.py
+│   └── evaluate_inventory.py
 ├── tests/
-├── docs/                       # architecture, provenance, limitations, evaluation, EDA methodology
+├── docs/                       # architecture, provenance, limitations, evaluation, EDA, inventory
 ├── models/                     # git-ignored
-├── reports/                    # EDA and future reports; git-ignored
+├── reports/                    # EDA, forecasting and inventory reports; git-ignored
 ├── logs/                       # git-ignored
 └── notebooks/                  # planned
 ```
@@ -440,6 +485,17 @@ experiments complete.
 | LightGBM | — | — | — | — | Not Evaluated |
 | XGBoost | — | — | — | — | Not Evaluated |
 | LSTM / GRU | — | — | — | — | Optional, Not Evaluated |
+
+### Inventory evaluation (M4)
+
+Inventory policy metrics are **not** forecasting errors and are not mixed into the
+forecast table above. Running `scripts/simulate_inventory.py` and
+`scripts/evaluate_inventory.py` writes the actual fill rate, SKU-day service level,
+stockout frequency, lost-sales proxy, average inventory, turnover, days of
+inventory and replenishment counts for the synthetic historical simulation to
+`reports/inventory/`. Definitions are in
+[`docs/inventory_optimization.md`](docs/inventory_optimization.md). No holding cost,
+monetary saving or real-world service improvement is claimed.
 
 ## Business Impact
 
@@ -469,19 +525,24 @@ inventory policies are evaluated on real or explicitly labelled synthetic data.
 - **EDA findings are descriptive associations, not causal effects.** Price,
   discount, festival and promotion relationships can be confounded by category
   mix, seasonality and product lifecycle.
-- **Forecasting is implemented (M3); inventory optimization and the dashboard
-  are not implemented yet.**
+- **Forecasting is implemented (M3); inventory optimization is implemented for the
+  synthetic dataset only (M4); explainability and the full dashboard remain planned.**
+- **Synthetic sales are stockout-censored**, so observed units understate latent
+  demand during stockouts. Simulation fill rates may therefore be optimistic.
+- **No inventory records exist for UCI/M5**; the inventory engine refuses those modes.
+- **No purchase cost, supplier MOQ, pack size, warehouse capacity or holding cost
+  exists** in the synthetic dataset. These are not invented or estimated.
 - Date completion creates zero-sales observations for open days; it does not
   invent demand. Outliers are flagged, never deleted.
 
 ## Future Improvements
 
-- Implement and backtest baseline, statistical and ML forecasters.
 - Add cold-start forecasting using category/attribute similarity.
 - Add quantile forecasts and prediction intervals.
-- Build the inventory optimization engine with documented assumptions.
+- Add optional historical-policy reconstruction if latent demand or full decision
+  logs ever become available.
 - Add SHAP explanations and business-language narratives.
-- Add what-if scenario simulation with explicit causal caveats.
+- Extend scenario simulation into the business-facing app with explicit causal caveats.
 - Build the six-page Streamlit dashboard with CSV export.
 - Add MLflow experiment tracking (optional).
 - Add a small curated sample dataset so the repository can be demoed without the

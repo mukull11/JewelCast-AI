@@ -86,3 +86,13 @@ by JewelCast AI. Machine-readable hashes, sizes and row counts are in
 - Do not treat null `available_stock` in UCI/M5 as zero inventory.
 - Do not interpret `date_imputed` rows as observed demand; they are zero-sales
   calendar completions.
+
+## Inventory optimization data use (M4)
+
+Inventory optimization is implemented for the **synthetic dataset only**. It uses
+the simulated daily `available_stock`, weekly inventory snapshots and simulated
+purchase orders described above. The weekly `committed_qty` was derived from the
+following seven days of demand and is excluded from historical decisions by
+default to avoid look-ahead. UCI and M5 have no inventory or purchase-order
+records; the inventory engine rejects those modes rather than assigning inventory.
+No supplier cost, MOQ, pack-size, warehouse-capacity or holding-cost data exists.

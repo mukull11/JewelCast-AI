@@ -152,9 +152,66 @@ festivals:
     - {name: "Wedding Season 2024", start: "2024-11-15", end: "2024-12-15", strength: 1.25}
 
 inventory:
+  # Inventory optimization is currently supported for the synthetic dataset
+  # only. UCI and M5 contain no inventory or purchase-order records.
+  mode: synthetic
   service_level: 0.95
+  supported_service_levels: [0.90, 0.95, 0.97, 0.99]
   default_lead_time_days: 14
   review_period_days: 7
+  forecast_horizon: 30
+  # Safety-stock methods: demand_volatility | forecast_error | empirical
+  # demand_volatility is the documented default: sigma_LTD = std(daily units) * sqrt(L).
+  safety_stock_method: demand_volatility
+  demand_volatility_window_days: 28
+  min_history_days_for_volatility: 14
+  # committed_qty in the synthetic weekly snapshots was generated from the
+  # following 7 days of demand, so using it for a historical decision would leak
+  # future information. It is excluded from decisions by default and reported as
+  # context only.
+  use_committed_stock: false
+  risk:
+    # A stockout projected within this many days is classified Critical.
+    critical_cover_days: 3
+    # High: days of on-hand cover below lead time (stock runs out before a new
+    # order can arrive). Medium: below lead time + review period.
+    medium_cover_includes_review: true
+  overstock:
+    cover_threshold_days: 90
+    slow_moving_daily_units: 0.10
+    inactive_history_days: 30
+  replenishment:
+    # No supplier MOQ or pack-size data exists in the synthetic dataset. The
+    # defaults are deliberately permissive and must be changed explicitly.
+    min_order_qty: 0
+    order_multiple: 1
+    max_storage_units: null
+    protection_period_includes_review: true
+  scenarios:
+    - {name: baseline, demand_multiplier: 1.0}
+    - {name: demand_plus_10, demand_multiplier: 1.10}
+    - {name: demand_plus_20, demand_multiplier: 1.20}
+    - {name: demand_minus_10, demand_multiplier: 0.90}
+    - {name: lead_time_plus_7, lead_time_extra_days: 7}
+    - {name: service_level_97, service_level: 0.97}
+    - {name: service_level_99, service_level: 0.99}
+  simulation:
+    start_date: "2024-10-01"
+    end_date: "2024-12-31"
+    decision_frequency_days: 7
+    # frozen: fit one causal model at simulation start and reuse it (fast).
+    # rolling: refit every refit_every_days using only data available then.
+    forecast_mode: frozen
+    refit_every_days: 30
+    horizon: 30
+    # Controlled comparison: every policy starts with the same on-hand stock and
+    # an empty pipeline. Opening historical POs are not inherited.
+    include_opening_purchase_orders: false
+    max_training_rows: 400000
+    policies: [forecast_driven, simple_rop]
+  reporting:
+    output_dir: reports/inventory
+    top_n: 25
 
 forecasting:
   horizons: [7, 15, 30]
